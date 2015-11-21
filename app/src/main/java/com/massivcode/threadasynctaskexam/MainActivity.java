@@ -27,6 +27,7 @@ public class MainActivity extends AppCompatActivity {
                     mCount++;
 
                     Log.i(TAG, "Current Count : " + mCount);
+                    mCountTextView.setText("Count : " + mCount);
 
                     try {
                         Thread.sleep(1000);
