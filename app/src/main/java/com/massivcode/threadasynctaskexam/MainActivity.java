@@ -1,6 +1,7 @@
 package com.massivcode.threadasynctaskexam;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -11,6 +12,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
     private int mCount = 0;
     TextView mCountTextView = null;
+    Handler mHandler = new Handler();
 
 
     @Override
@@ -23,11 +25,17 @@ public class MainActivity extends AppCompatActivity {
         Thread workerThread = new Thread() {
             @Override
             public void run() {
-                for(int i = 0; i < 10; i++) {
+                for (int i = 0; i < 10; i++) {
                     mCount++;
 
-                    Log.i(TAG, "Current Count : " + mCount);
-                    mCountTextView.setText("Count : " + mCount);
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.i(TAG, "Current Count : " + mCount);
+                            mCountTextView.setText("Count : " + mCount);
+                        }
+                    });
+
 
                     try {
                         Thread.sleep(1000);
