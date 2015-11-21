@@ -19,7 +19,7 @@ public class MainActivity extends AppCompatActivity {
 
         mCountTextView = (TextView) findViewById(R.id.count_textview);
 
-        for(int i = 0; i < 9 ; i++) {
+        for(int i = 0; i < 15 ; i++) {
             mCount++;
 
             Log.i(TAG, "Current Count : " + mCount);
