@@ -60,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
                     message.obj = mCountTextView;
 
                     // 핸들러를 통해 메시지를 메시지 큐로 보낸다.
-                    mHandler.sendMessage(message);
+                    mHandler.sendMessageDelayed(message, 10000);
 
 
                     try {
