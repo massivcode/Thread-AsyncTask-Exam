@@ -1,75 +1,123 @@
 package com.massivcode.threadasynctaskexam;
 
 import android.os.Bundle;
-import android.os.CountDownTimer;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.TextView;
+
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
-    TextView mCountTextView = null;
-    CountDownTimer mCountDownTimer = null;
+    TextView m100MsCountTv = null;
+    TextView m1000MsCountTv = null;
 
-    class TestCountDownTimer extends CountDownTimer {
+    Timer mTimer = new Timer();
 
-        /**
-         * @param millisInFuture    The number of millis in the future from the call
-         *                          to {@link #start()} until the countdown is done and {@link #onFinish()}
-         *                          is called.
-         * @param countDownInterval The interval along the way to receive
-         *                          {@link #onTick(long)} callbacks.
-         */
-        public TestCountDownTimer(long millisInFuture, long countDownInterval) {
-            super(millisInFuture, countDownInterval);
-        }
-
-        @Override
-        public void onTick(long millisUntilFinished) {
-            // 매번 틱마다 남은 초를 출력한다.
-            mCountTextView.setText(millisUntilFinished/1000 + " 초");
-        }
-
-        @Override
-        public void onFinish() {
-            // 카운트다운이 완료된 경우 카운트다운의 최종 초를 출력한다.
-            mCountTextView.setText("0 초");
-        }
-    }
+    TimerTask m100MsCountTimerTask = null;
+    TimerTask m1000MsCountTimerTask = null;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_count_down_timer);
+        setContentView(R.layout.activity_timer);
 
-        // 1. 레이아웃을 액티비티에 반영 및 텍스트뷰 객체를 얻어 온다.
-        mCountTextView = (TextView)findViewById(R.id.countdown_text);
+        m100MsCountTv = (TextView)findViewById(R.id.ms_100_countdown_text);
+        m1000MsCountTv = (TextView)findViewById(R.id.ms_1000_countdown_text);
+    }
 
-        // 2. 총 60초 동안 1초씩 카운트다운 객체를 생성한다.
-        mCountDownTimer = new TestCountDownTimer(60000, 1000);
+    @Override
+    protected void onDestroy() {
 
-        // 3. 카운트다운 초깃값을 출력한다.
-        mCountTextView.setText("60 초");
+        // 타이머는 작업 스레드이기 때문에 액티비티가 종료될 때
+        // 반드시 중단하여 스레드를 제거시키도록 한다.
+        mTimer.cancel();
 
+        super.onDestroy();
     }
 
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.start_countdown_btn: {
-                // 총 60초 카운트다운을 시작한다.
-                mCountDownTimer.start();
+                startTimerTask();
                 break;
             }
             case R.id.reset_countdown_btn: {
-                // 카운트다운을 중단하고 초를 리셋한다.
-                mCountDownTimer.cancel();
-                mCountTextView.setText("60 초");
+                stopTimerTask();
                 break;
+
             }
         }
+    }
+
+    private void stopTimerTask() {
+
+        // 1. 모든 태스크를 중단한다.
+        if(m100MsCountTimerTask != null || m1000MsCountTimerTask != null) {
+            m100MsCountTimerTask.cancel();
+            m100MsCountTimerTask = null;
+
+            m1000MsCountTimerTask.cancel();
+            m1000MsCountTimerTask = null;
+        }
+
+        // 2. 카운팅 초기화값을 텍스트뷰에 출력한다.
+        m100MsCountTv.setText("100MS Count : 0");
+        m1000MsCountTv.setText("1000MS Count : 0");
+
+    }
+
+    private void startTimerTask() {
+
+        // 1. TimerTask 실행 중이라면 중단한다.
+        stopTimerTask();
+
+        // 2. 새로운 TimerTask를 생성한다.
+
+        // 1) 0.1초마다 카운팅되는 태스크를 등록한다.
+        m100MsCountTimerTask = new TimerTask() {
+            int mCount = 0;
+
+            @Override
+            public void run() {
+                mCount++;
+
+                m100MsCountTv.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        m100MsCountTv.setText("100MS Count : " + mCount);
+                    }
+                });
+            }
+        };
+
+        // 2) 1초마다 카운팅되는 태스크를 등록한다.
+        m1000MsCountTimerTask = new TimerTask() {
+            int mCount = 0;
+
+            @Override
+            public void run() {
+                mCount++;
+                m1000MsCountTv.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        m1000MsCountTv.setText("1000MS Count : " + mCount);
+                    }
+                });
+            }
+        };
+
+        // 3. TimerTask를 Timer를 통해 실행시킨다.
+
+        // 1) 즉시 타이머를 구동하고 100밀리세컨드 단위로 반복하라.
+        mTimer.schedule(m100MsCountTimerTask, 0, 100);
+
+        // 2) 1초 후에 타이머를 구동하고 1000밀리세컨드 단위로 반복하라.
+        mTimer.schedule(m1000MsCountTimerTask, 1000, 1000);
 
     }
 
