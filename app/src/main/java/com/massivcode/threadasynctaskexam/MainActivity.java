@@ -1,9 +1,8 @@
 package com.massivcode.threadasynctaskexam;
 
-import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
@@ -11,89 +10,67 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
-    TextView mDownloadStateTextView = null;
-    FileDownloadTask mFileDownloadTask = null;
+    TextView mCountTextView = null;
+    CountDownTimer mCountDownTimer = null;
+
+    class TestCountDownTimer extends CountDownTimer {
+
+        /**
+         * @param millisInFuture    The number of millis in the future from the call
+         *                          to {@link #start()} until the countdown is done and {@link #onFinish()}
+         *                          is called.
+         * @param countDownInterval The interval along the way to receive
+         *                          {@link #onTick(long)} callbacks.
+         */
+        public TestCountDownTimer(long millisInFuture, long countDownInterval) {
+            super(millisInFuture, countDownInterval);
+        }
+
+        @Override
+        public void onTick(long millisUntilFinished) {
+            // 매번 틱마다 남은 초를 출력한다.
+            mCountTextView.setText(millisUntilFinished/1000 + " 초");
+        }
+
+        @Override
+        public void onFinish() {
+            // 카운트다운이 완료된 경우 카운트다운의 최종 초를 출력한다.
+            mCountTextView.setText("0 초");
+        }
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_async);
+        setContentView(R.layout.activity_count_down_timer);
 
-        mDownloadStateTextView = (TextView)findViewById(R.id.download_state_textview);
+        // 1. 레이아웃을 액티비티에 반영 및 텍스트뷰 객체를 얻어 온다.
+        mCountTextView = (TextView)findViewById(R.id.countdown_text);
 
-        mFileDownloadTask = new FileDownloadTask();
-        mFileDownloadTask.execute("FileUrl_1", "FileUrl_2", "FileUrl_3" , "FileUrl_4", "FileUrl_5" , "FileUrl_6", "FileUrl_7" , "FileUrl_8", "FileUrl_9", "FileUrl_10");
+        // 2. 총 60초 동안 1초씩 카운트다운 객체를 생성한다.
+        mCountDownTimer = new TestCountDownTimer(60000, 1000);
 
+        // 3. 카운트다운 초깃값을 출력한다.
+        mCountTextView.setText("60 초");
 
     }
 
     public void onClick(View view) {
-
-        if(mFileDownloadTask != null && mFileDownloadTask.getStatus() != AsyncTask.Status.FINISHED) {
-            mFileDownloadTask.cancel(true);
+        switch (view.getId()) {
+            case R.id.start_countdown_btn: {
+                // 총 60초 카운트다운을 시작한다.
+                mCountDownTimer.start();
+                break;
+            }
+            case R.id.reset_countdown_btn: {
+                // 카운트다운을 중단하고 초를 리셋한다.
+                mCountDownTimer.cancel();
+                mCountTextView.setText("60 초");
+                break;
+            }
         }
 
     }
 
-    private class FileDownloadTask extends AsyncTask<String, Integer, Boolean> {
-
-        @Override
-        protected void onPreExecute() {
-            // 최초 화면에 내려받기 시도를 알리는 텍스트를 출력한다.
-            mDownloadStateTextView.setText("FileDownload...");
-        }
-
-        @Override
-        protected Boolean doInBackground(String... downloadInfos) {
-            int totalCount = downloadInfos.length;
-
-            for(int i = 1; i <= totalCount; i++) {
-                // 1. 파일 내려받기 처리 상태를 표시하기 위해 호출
-                publishProgress(i, totalCount);
-
-                if(isCancelled() == true) {
-                    Log.d(TAG, "isCancelled()");
-                    return false;
-                }
-
-                // 2. 아래를 파일을 내려받는 과정이라고 가정한다.
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    Log.d(TAG, "InterruptedException");
-                    return false;
-                }
-
-            }
-
-
-            return true;
-        }
-
-        @Override
-        protected void onProgressUpdate(Integer... downloadInfos) {
-            int currentCount = downloadInfos[0];
-            int totalCount = downloadInfos[1];
-
-            // 현재의 파일 내려받기 상태를 표시한다. 예) Downloading: 3/10
-            mDownloadStateTextView.setText("Downloading : " + currentCount + "/" + totalCount);
-
-        }
-
-        @Override
-        protected void onCancelled() {
-            // 화면에 내려받기가 취소되었다는 텍스트를 출력한다.
-            mDownloadStateTextView.setText("Download cancelled");
-        }
-
-        @Override
-        protected void onPostExecute(Boolean result) {
-            // 화면에 내려받기 성공/실패 여부를 텍스트로 출력한다.
-            if(true == result) {
-                mDownloadStateTextView.setText("Download Finished");
-            } else {
-                mDownloadStateTextView.setText("Download Failed");
-            }
-        }
-    }
 }
