@@ -1,85 +1,99 @@
 package com.massivcode.threadasynctaskexam;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
-    private int mCount = 0;
-    TextView mCountTextView = null;
 
-    // 해당 메시지가 무엇을 처리하는지 구분하기 위한 상수
-    static final private int MESSAGE_DRAW_CONTENT_COUNT = 1;
-
-    // 1. 메시지 큐에 메시지를 추가하기 위한 핸들러를 생성한다.
-    Handler mHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case MESSAGE_DRAW_CONTENT_COUNT: {
-                    int currentCount = msg.arg1;
-                    TextView countTextView = (TextView)msg.obj;
-
-                    countTextView.setText("Count : " + currentCount);
-                    break;
-                }
-            }
-        }
-    };
-
+    TextView mDownloadStateTextView = null;
+    FileDownloadTask mFileDownloadTask = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_async);
 
-        mCountTextView = (TextView) findViewById(R.id.count_textview);
+        mDownloadStateTextView = (TextView)findViewById(R.id.download_state_textview);
 
-        // 10초 동안 1초에 1씩 카운트하는 스레드 생성 및 시작
-        Thread workerThread = new Thread() {
-            @Override
-            public void run() {
-                for (int i = 0; i < 10; i++) {
-                    mCount++;
+        mFileDownloadTask = new FileDownloadTask();
+        mFileDownloadTask.execute("FileUrl_1", "FileUrl_2", "FileUrl_3" , "FileUrl_4", "FileUrl_5" , "FileUrl_6", "FileUrl_7" , "FileUrl_8", "FileUrl_9", "FileUrl_10");
 
-                    // 2. 메시지 큐에 담을 메시지를 하나 생성한다.
-                    Message message = Message.obtain(mHandler);
-
-                    // 3. 핸들러의 handleMessage로 전달할 값들을 설정한다.
-
-                    // 무엇을 실행하는 메시지인지 구분하기 위해 구분자 설정
-                    message.what = MESSAGE_DRAW_CONTENT_COUNT;
-                    // 메시지가 실행될 때 참조하는 int형 데이터 설정
-                    message.arg1 = mCount;
-                    // 메시지가 실행될 때 참조하는 Object형 데이터 설정
-                    message.obj = mCountTextView;
-
-                    // 핸들러를 통해 메시지를 메시지 큐로 보낸다.
-                    mHandler.sendMessageDelayed(message, 10000);
-
-
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        };
-
-        workerThread.start();
 
     }
 
     public void onClick(View view) {
-        // 현재까지 카운트한 수치를 텍스트 뷰에 출력한다.
-        // ==========================================
-        mCountTextView.setText("Count : " + mCount);
-        // ==========================================
+
+        if(mFileDownloadTask != null && mFileDownloadTask.getStatus() != AsyncTask.Status.FINISHED) {
+            mFileDownloadTask.cancel(true);
+        }
+
+    }
+
+    private class FileDownloadTask extends AsyncTask<String, Integer, Boolean> {
+
+        @Override
+        protected void onPreExecute() {
+            // 최초 화면에 내려받기 시도를 알리는 텍스트를 출력한다.
+            mDownloadStateTextView.setText("FileDownload...");
+        }
+
+        @Override
+        protected Boolean doInBackground(String... downloadInfos) {
+            int totalCount = downloadInfos.length;
+
+            for(int i = 1; i <= totalCount; i++) {
+                // 1. 파일 내려받기 처리 상태를 표시하기 위해 호출
+                publishProgress(i, totalCount);
+
+                if(isCancelled() == true) {
+                    Log.d(TAG, "isCancelled()");
+                    return false;
+                }
+
+                // 2. 아래를 파일을 내려받는 과정이라고 가정한다.
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    Log.d(TAG, "InterruptedException");
+                    return false;
+                }
+
+            }
+
+
+            return true;
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... downloadInfos) {
+            int currentCount = downloadInfos[0];
+            int totalCount = downloadInfos[1];
+
+            // 현재의 파일 내려받기 상태를 표시한다. 예) Downloading: 3/10
+            mDownloadStateTextView.setText("Downloading : " + currentCount + "/" + totalCount);
+
+        }
+
+        @Override
+        protected void onCancelled() {
+            // 화면에 내려받기가 취소되었다는 텍스트를 출력한다.
+            mDownloadStateTextView.setText("Download cancelled");
+        }
+
+        @Override
+        protected void onPostExecute(Boolean result) {
+            // 화면에 내려받기 성공/실패 여부를 텍스트로 출력한다.
+            if(true == result) {
+                mDownloadStateTextView.setText("Download Finished");
+            } else {
+                mDownloadStateTextView.setText("Download Failed");
+            }
+        }
     }
 }
